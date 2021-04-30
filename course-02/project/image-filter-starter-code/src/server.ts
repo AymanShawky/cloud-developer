@@ -1,6 +1,6 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import {filterImageFromURL, deleteLocalFiles, deleteAllLocalFiles} from './util/util';
 
 (async () => {
 
@@ -30,14 +30,27 @@ app.get('/filteredimage', async (req, res) =>{
   let image_url = req.query.image_url;
 
   if(!image_url){
-    res.send("image_url is required.");
+    return res.status(400)
+              .send("image_url is required.");
   }
 
-  await filterImageFromURL(image_url).then(async img => {
-    res.sendFile(img, null , async () => await deleteLocalFiles([img]));
-  });
-  
+  await filterImageFromURL(image_url)
+  .then( 
+    // resolve or success
+    (result)=>{
+     return res.sendFile(result);  
+    } , 
+    
+    // reject or error
+    (err)=>{
+      return res.status(422).send(err);
+    })
+    .catch(err =>{return res.status(400).send(err);})
+    .finally(async () => await deleteAllLocalFiles());
+
+
 });
+
   /**************************************************************************** */
 
   //! END @TODO1
